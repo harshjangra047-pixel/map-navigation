@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartRoute CGC — Intelligent Campus Navigation | CGC Landran</title>
+  <meta name="description" content="Official DSA Campus Navigation System for Chandigarh Group of Colleges (CGC) Landran, Mohali. Powered by C++ Graph Algorithms (Dijkstra, A*, BFS, DFS).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="cgc-theme">
+
+  <!-- Top Navigation Bar -->
+  <header class="top-nav">
+    <div class="nav-left">
+      <div class="cgc-brand">
+        <div class="cgc-logo-badge">
+          <span class="logo-letters">CGC</span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-row">
+            <span class="brand-name">SmartRoute CGC</span>
+            <span class="badge-dsa">C++ DSA ENGINE</span>
+          </div>
+          <span class="brand-sub">CGC Landran Campus • Sector 112, Mohali, Punjab</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Landmark Shortcuts -->
+    <div class="nav-center-quick">
+      <div class="quick-chips-wrapper">
+        <span class="quick-label">Jump to:</span>
+        <button class="chip-landmark" data-id="0" title="Main Entrance on Kharar-Banur Hwy">Main Gate 1</button>
+        <button class="chip-landmark" data-id="4" title="Block 2 - Computer Science & IT">CSE Area</button>
+        <button class="chip-landmark" data-id="5" title="Knowledge Resource Centre">Library</button>
+        <button class="chip-landmark" data-id="8" title="Student Food Court & Nescafe">Cafeteria</button>
+        <button class="chip-landmark" data-id="7" title="1000+ Auditorium">Auditorium</button>
+        <button class="chip-landmark" data-id="16" title="Boys Hostels 1 & 2">Boys Hostel</button>
+        <button class="chip-landmark" data-id="17" title="Kalpana Chawla Girls Hostel">Girls Hostel</button>
+        <button class="chip-landmark" data-id="18" title="Sports Stadium & Track">Sports</button>
+        <button class="chip-landmark" data-id="20" title="Campus Dispensary">Medical</button>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div class="system-status">
+        <span class="pulse-emerald"></span>
+        <span class="status-text">SYSTEM ONLINE</span>
+      </div>
+      <button id="btn-live-nav" class="btn btn-nav-sim" title="Start Step-by-Step Simulated Walkthrough">
+        <span class="nav-pulse-icon">📍</span>
+        <span>Start Navigation</span>
+      </button>
+      <button id="btn-algo-lab" class="btn btn-nav-ghost" title="Open Dijkstra vs A* Benchmarking Lab">
+        <span>Algorithm Lab</span>
+      </button>
+      <button id="btn-dsa-inspector" class="btn btn-nav-ghost" title="Open Real-Time DSA Graph Inspector">
+        <span>DSA Inspector</span>
+      </button>
+      <button id="btn-viva-guide" class="btn btn-nav-ghost" title="Project Viva & Examination Guide">
+        <span>About / Viva</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Multi-Panel Campus Viewport -->
+  <div class="app-workspace">
+    <!-- FLOATING LEFT PANEL: Route Controls & Modifiers -->
+    <aside class="floating-panel left-floating" id="panel-controls">
+      <!-- Route Calculation Card -->
+      <div class="glass-card main-route-card">
+        <div class="card-head">
+          <div class="head-title">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+            <h3>Campus Navigator</h3>
+          </div>
+          <span class="mode-badge" id="badge-active-algo">A* Heuristic</span>
+        </div>
+
+        <div class="route-inputs-group">
+          <!-- Source -->
+          <div class="input-block">
+            <div class="input-label-row">
+              <label for="select-source">
+                <span class="marker-dot src-dot"></span> Starting Location (From)
+              </label>
+              <button id="btn-clear-source" class="btn-clear-input" title="Exit / clear starting location so you can start from another place">✕ Clear Start</button>
+            </div>
+            <div class="custom-select-wrap">
+              <select id="select-source" class="campus-select">
+                <option value="" disabled selected>Loading CGC landmarks...</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Swap Button -->
+          <button id="btn-swap-locations" class="btn-swap" title="Swap Source and Destination">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+          </button>
+
+          <!-- Destination -->
+          <div class="input-block">
+            <div class="input-label-row">
+              <label for="select-dest">
+                <span class="marker-dot dest-dot"></span> Target Landmark (To)
+              </label>
+              <button id="btn-clear-dest" class="btn-clear-input" title="Clear target destination">✕ Clear Dest</button>
+            </div>
+            <div class="custom-select-wrap">
+              <select id="select-dest" class="campus-select">
+                <option value="" disabled selected>Loading CGC landmarks...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mode & Algorithm Toggles -->
+        <div class="toggles-grid">
+          <div class="toggle-col">
+            <label class="toggle-label">Preference</label>
+            <select id="select-route-mode" class="compact-select">
+              <option value="walking" selected>🚶 Walking Time (Paced)</option>
+              <option value="distance">📏 Shortest Distance (km)</option>
+              <option value="avoid_traffic">🛡️ Avoid Crowded Corridors</option>
+              <option value="emergency">🚑 Emergency Quick Corridor</option>
+            </select>
+          </div>
+          <div class="toggle-col">
+            <label class="toggle-label">C++ Engine Algorithm</label>
+            <select id="select-algorithm" class="compact-select">
+              <option value="astar" selected>A* Search (Euclidean h(n))</option>
+              <option value="dijkstra">Dijkstra (Uniform Min-Heap)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="route-actions-row">
+          <button id="btn-find-route" class="btn btn-cgc-primary">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+            <span>Find Optimal Route</span>
+          </button>
+          <button id="btn-exit-route" class="btn btn-secondary-exit" title="Exit navigation and clear current route">
+            <span>✕ Exit Navigation</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Simulated Campus Traffic Card -->
+      <div class="glass-card collapsible-card" id="card-traffic">
+        <div class="card-head collapsible-trigger" data-target="traffic-content">
+          <div class="head-title">
+            <span class="head-icon">🚦</span>
+            <h4>Simulated Campus Traffic</h4>
+          </div>
+          <span class="head-badge warning">Student Rush Hour</span>
+        </div>
+        <div id="traffic-content" class="card-collapsible-body">
+          <p class="card-hint">Simulate student crowd congestion along campus avenues to observe dynamic path recalculation.</p>
+          <div class="input-block">
+            <label for="select-traffic-road">Select Campus Pathway</label>
+            <select id="select-traffic-road" class="campus-select">
+              <option value="" disabled selected>Select pathway...</option>
+            </select>
+          </div>
+          <div class="traffic-btn-group">
+            <button class="btn-crowd crowd-low" data-level="LOW">
+              <span class="crowd-dot dot-low"></span> Normal (1.0x)
+            </button>
+            <button class="btn-crowd crowd-med" data-level="MEDIUM">
+              <span class="crowd-dot dot-med"></span> Passing Class (1.5x)
+            </button>
+            <button class="btn-crowd crowd-high" data-level="HIGH">
+              <span class="crowd-dot dot-high"></span> Peak Rush (2.5x)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Road Control & Blockage Simulation -->
+      <div class="glass-card collapsible-card" id="card-blockage">
+        <div class="card-head collapsible-trigger" data-target="blockage-content">
+          <div class="head-title">
+            <span class="head-icon">🚧</span>
+            <h4>Campus Pathway Closures</h4>
+          </div>
+          <span class="head-badge danger">Dynamic Edge Cut</span>
+        </div>
+        <div id="blockage-content" class="card-collapsible-body">
+          <p class="card-hint">Simulate maintenance / construction blockage to trigger instantaneous C++ detours.</p>
+          <div class="input-block">
+            <label for="select-block-road">Pathway Segment</label>
+            <select id="select-block-road" class="campus-select">
+              <option value="" disabled selected>Select pathway to close...</option>
+            </select>
+          </div>
+          <div class="blockage-actions">
+            <button id="btn-block-path" class="btn btn-danger-action">
+              <span>Close Pathway (Block)</span>
+            </button>
+            <button id="btn-unblock-path" class="btn btn-success-action">
+              <span>Reopen Pathway</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graph Traversals (BFS / DFS) -->
+      <div class="glass-card collapsible-card" id="card-traversals">
+        <div class="card-head collapsible-trigger" data-target="traversal-content">
+          <div class="head-title">
+            <span class="head-icon">🌲</span>
+            <h4>Graph Traversals (BFS & DFS)</h4>
+          </div>
+          <span class="head-badge">Educational</span>
+        </div>
+        <div id="traversal-content" class="card-collapsible-body">
+          <p class="card-hint">Visualize BFS (level-by-level queue expansion) and DFS (deep branch stack exploration).</p>
+          <div class="input-block">
+            <label for="select-traversal-start">Start From</label>
+            <select id="select-traversal-start" class="campus-select"></select>
+          </div>
+          <div class="traversal-actions">
+            <button id="btn-run-bfs" class="btn btn-traversal-bfs">Animate BFS</button>
+            <button id="btn-run-dfs" class="btn btn-traversal-dfs">Animate DFS</button>
+          </div>
+          <div id="traversal-sequence-box" class="traversal-box hidden"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER HERO MAP VIEWPORT -->
+    <main class="map-viewport-wrapper">
+      <!-- Floating Map Toolbar -->
+      <div class="floating-map-controls">
+        <div class="map-view-toggles">
+          <button id="btn-toggle-3d" class="btn-chip btn-earth-mode" title="Switch between 2D Plan and 3D Google Earth Perspective">🌍 3D Earth</button>
+          <button id="btn-orbit-campus" class="btn-chip btn-orbit-mode" title="Cinematic 360° Aerial Orbit Flyover">🛰️ Orbit 360°</button>
+          <button id="btn-toggle-buildings" class="btn-chip active" title="Toggle 3D Building Outlines">Buildings</button>
+          <button id="btn-toggle-labels" class="btn-chip active" title="Toggle Landmark Labels">Labels</button>
+          <button id="btn-toggle-traffic" class="btn-chip active" title="Toggle Traffic Flow Colors">Crowd Density</button>
+          <button id="btn-toggle-greenery" class="btn-chip active" title="Toggle Campus Lawns">Greens</button>
+        </div>
+        <div class="zoom-controls">
+          <button id="btn-zoom-in" class="btn-zoom" title="Zoom In">+</button>
+          <button id="btn-zoom-out" class="btn-zoom" title="Zoom Out">−</button>
+          <button id="btn-zoom-reset" class="btn-zoom" title="Reset Campus View">⟲</button>
+        </div>
+      </div>
+
+      <!-- Google Earth 3D Compass & Pitch Navigator Gizmo -->
+      <div class="earth-gizmo" id="earth-gizmo">
+        <div class="compass-dial" id="btn-compass-north" title="Click to Reset North (0° Bearing)">
+          <div class="compass-needle" id="compass-needle">
+            <span class="needle-north">▲ N</span>
+            <span class="needle-south">▼</span>
+          </div>
+        </div>
+        <div class="pitch-tilt-group">
+          <button id="btn-tilt-up" class="btn-gizmo" title="Tilt Camera Up (3D Perspective)">▲</button>
+          <button id="btn-tilt-down" class="btn-gizmo" title="Tilt Camera Down (2D Plan)">▼</button>
+          <button id="btn-rotate-left" class="btn-gizmo" title="Rotate Camera Left">↺</button>
+          <button id="btn-rotate-right" class="btn-gizmo" title="Rotate Camera Right">↻</button>
+        </div>
+      </div>
+
+      <!-- Simulated Navigation Active Banner -->
+      <div id="sim-nav-hud" class="sim-nav-hud hidden">
+        <div class="hud-item hud-pulsing">
+          <span class="hud-label">YOU ARE HERE</span>
+          <span id="hud-current-node" class="hud-val">Main Gate 1</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">NEXT WAYPOINT</span>
+          <span id="hud-next-node" class="hud-val">Admin Block</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">REMAINING DISTANCE</span>
+          <span id="hud-rem-dist" class="hud-val">0.5 km</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">ESTIMATED TIME</span>
+          <span id="hud-rem-time" class="hud-val">6.2 min</span>
+        </div>
+        <button id="btn-stop-sim" class="btn-stop-hud">&times; Exit Nav</button>
+      </div>
+
+      <!-- SVG Map Canvas (Styled CGC Landran Digital Twin) -->
+      <div class="map-canvas-container" id="map-container">
+        <svg id="cgc-campus-svg" viewBox="0 0 1000 750" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <!-- Drop Shadow for 3D Buildings -->
+            <filter id="building-shadow" x="-20%" y="-20%" width="150%" height="150%">
+              <feDropShadow dx="4" dy="8" stdDeviation="6" flood-color="#010409" flood-opacity="0.9"/>
+            </filter>
+            <!-- Glowing Filter for Selected Routes -->
+            <filter id="route-glow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="glow"/>
+              <feMerge>
+                <feMergeNode in="glow"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+            <!-- Gradient for Optimal Route -->
+            <linearGradient id="cgc-route-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00f2fe" />
+              <stop offset="50%" stop-color="#38bdf8" />
+              <stop offset="100%" stop-color="#818cf8" />
+            </linearGradient>
+            <!-- 3D Architectural Wall Facade Gradients -->
+            <linearGradient id="wall-south-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#16294a" />
+              <stop offset="100%" stop-color="#0a1224" />
+            </linearGradient>
+            <linearGradient id="wall-east-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#0f1d38" />
+              <stop offset="100%" stop-color="#060c18" />
+            </linearGradient>
+            <linearGradient id="roof-glass-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="rgba(56, 189, 248, 0.25)" />
+              <stop offset="100%" stop-color="rgba(14, 165, 233, 0.05)" />
+            </linearGradient>
+            <!-- Grass Texture Pattern -->
+            <pattern id="lawn-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
+              <circle cx="5" cy="5" r="1.5" fill="#14532d" opacity="0.4"/>
+              <circle cx="15" cy="15" r="1.5" fill="#166534" opacity="0.4"/>
+            </pattern>
+          </defs>
+
+          <!-- LAYER 0: Campus Grounds & Plot Boundary -->
+          <g id="layer-boundary"></g>
+
+          <!-- LAYER 1: Green Spaces & Lawns -->
+          <g id="layer-greenery"></g>
+
+          <!-- LAYER 2: Parking Zones & Sports Tracks -->
+          <g id="layer-zones"></g>
+
+          <!-- LAYER 3: Campus Roads & Walkways -->
+          <g id="layer-roads"></g>
+
+          <!-- LAYER 4: 3D Building Footprints -->
+          <g id="layer-buildings"></g>
+
+          <!-- LAYER 5: Active Calculated Route Highlight -->
+          <g id="layer-active-route"></g>
+
+          <!-- LAYER 6: Landmark Node Circles & Anchors -->
+          <g id="layer-nodes"></g>
+
+          <!-- LAYER 7: Navigation Waypoint Tracker / Animated Runner -->
+          <g id="layer-waypoint-runner"></g>
+
+          <!-- LAYER 8: Landmark Text Labels -->
+          <g id="layer-labels"></g>
+        </svg>
+
+        <!-- Popover Card for Campus Buildings -->
+        <div id="building-popover" class="building-popover hidden">
+          <div class="popover-badge" id="popover-category">ACADEMIC ZONE</div>
+          <h4 id="popover-title">CSE Department (Block 2)</h4>
+          <p id="popover-desc">Computer Science & Engineering Complex with AI & iOS developer labs.</p>
+          <div class="popover-actions">
+            <button class="btn-popover" id="btn-popover-src">🟢 Start Here</button>
+            <button class="btn-popover primary" id="btn-popover-dest">🔵 Navigate Here</button>
+            <button class="btn-popover danger" id="btn-popover-clear" title="Clear this landmark selection">✕ Clear Point</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Campus Map Legend -->
+      <div class="map-floating-legend">
+        <div class="legend-chip"><span class="leg-box leg-road"></span> Clear Path</div>
+        <div class="legend-chip"><span class="leg-box leg-med"></span> Moderate Crowd</div>
+        <div class="legend-chip"><span class="leg-box leg-high"></span> Congested</div>
+        <div class="legend-chip"><span class="leg-box leg-blocked"></span> Pathway Closed</div>
+        <div class="legend-chip"><span class="leg-box leg-route"></span> Optimal Route</div>
+      </div>
+    </main>
+
+    <!-- FLOATING RIGHT PANEL: Route Intelligence & Analytics -->
+    <aside class="floating-panel right-floating" id="panel-intelligence">
+      <!-- Route Summary Card -->
+      <div class="glass-card intelligence-card">
+        <div class="card-head">
+          <div class="head-title">
+            <span class="head-icon">⚡</span>
+            <h3>Route Intelligence</h3>
+          </div>
+          <span id="route-state-pill" class="state-pill ready">Awaiting Input</span>
+        </div>
+
+        <!-- Primary KPI Metrics -->
+        <div class="kpi-grid">
+          <div class="kpi-box">
+            <span class="kpi-label">ESTIMATED WALK</span>
+            <span class="kpi-value cyan" id="kpi-time">-- <small>min</small></span>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">PATH DISTANCE</span>
+            <span class="kpi-value" id="kpi-dist">-- <small>km</small></span>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">NODES EXPLORED</span>
+            <span class="kpi-value violet" id="kpi-nodes">--</span>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">C++ EXECUTION</span>
+            <span class="kpi-value green" id="kpi-cpu">-- <small>ms</small></span>
+          </div>
+        </div>
+
+        <!-- Waypoint Sequence Display -->
+        <div class="waypoint-sequence-wrap">
+          <span class="mini-label">WALKING ROUTE:</span>
+          <div id="route-sequence-list" class="route-sequence-list">
+            Select start and destination to view recommended route.
+          </div>
+        </div>
+
+        <!-- Turn-By-Turn Steps -->
+        <div class="turn-steps-wrap">
+          <div class="turn-head">
+            <span class="mini-label">TURN-BY-TURN CAMPUS PATHWAYS</span>
+            <div style="display: flex; gap: 6px;">
+              <button id="btn-recalculate-route" class="btn-micro-action" title="Recalculate route with current graph state">Recalculate</button>
+              <button id="btn-clear-active-route" class="btn-micro-action danger" title="Clear active route and exit navigation">Exit Route</button>
+            </div>
+          </div>
+          <div id="turn-steps-container" class="turn-steps-container">
+            <div class="step-empty">No active route computed.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alternative Bypass Route Card -->
+      <div class="glass-card secondary-card" id="card-alt-bypass">
+        <div class="card-head">
+          <div class="head-title">
+            <span class="head-icon">🔀</span>
+            <h4>Alternative Bypass Corridor</h4>
+          </div>
+          <span class="head-badge">Secondary Route</span>
+        </div>
+        <div id="alt-bypass-content" class="bypass-content">
+          <p class="card-hint">Secondary walking corridor will be shown if distinct routes exist across campus.</p>
+        </div>
+      </div>
+
+      <!-- Campus Live Statistics -->
+      <div class="glass-card stats-card">
+        <div class="card-head">
+          <div class="head-title">
+            <span class="head-icon">📊</span>
+            <h4>CGC Graph Network Stats</h4>
+          </div>
+          <button id="btn-reset-graph" class="btn-micro-action danger" title="Reset all closures and congestion">Reset Network</button>
+        </div>
+        <div class="network-stats-grid">
+          <div class="stat-item">
+            <span class="s-label">Campus Landmarks</span>
+            <strong id="stat-nodes-count">26</strong>
+          </div>
+          <div class="stat-item">
+            <span class="s-label">Walking Pathways</span>
+            <strong id="stat-roads-count">55</strong>
+          </div>
+          <div class="stat-item">
+            <span class="s-label">Active Congestion</span>
+            <strong id="stat-traffic-count" class="stat-warn">0</strong>
+          </div>
+          <div class="stat-item">
+            <span class="s-label">Closed Pathways</span>
+            <strong id="stat-blocked-count" class="stat-danger">0</strong>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Bottom Information Status Strip -->
+  <footer class="cgc-bottom-strip">
+    <div class="strip-left">
+      <span class="badge-tag cgc-brand-tag">CGC LANDRAN</span>
+      <span class="strip-text">Sector 112, Mohali, Punjab 140307</span>
+      <span class="strip-divider">|</span>
+      <span class="strip-text">Approx 30.6865° N, 76.6647° E</span>
+    </div>
+    <div class="strip-center">
+      <span class="strip-disclaimer">Educational DSA Prototype • Scaled digital model based on public CGC campus references</span>
+    </div>
+    <div class="strip-right">
+      <span class="strip-text">ENGINE: <strong>C++17 Min-Heap Dijkstra & A*</strong></span>
+      <span class="strip-divider">|</span>
+      <span class="strip-text">GRAPH: <strong>Adjacency List O(V + E)</strong></span>
+    </div>
+  </footer>
+
+  <!-- MODAL: Algorithm Lab (Dijkstra vs A* Benchmark) -->
+  <div id="modal-algo-lab" class="modal-layer hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">🔬</span>
+          <h3>Algorithm Benchmarking Lab: Dijkstra vs A*</h3>
+        </div>
+        <button class="btn-modal-close" data-modal="modal-algo-lab">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro">Empirical benchmark measured directly in the C++ engine using <code>std::chrono::high_resolution_clock</code> and settled vertex counters.</p>
+        <div class="benchmark-table-wrap">
+          <table class="benchmark-table">
+            <thead>
+              <tr>
+                <th>Benchmark Metric</th>
+                <th>Dijkstra (Uninformed)</th>
+                <th>A* Search (Euclidean Heuristic)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Search Paradigm</td>
+                <td>Uniform-Cost (Radial concentric expansion)</td>
+                <td>Informed Best-First: f(n) = g(n) + h(n)</td>
+              </tr>
+              <tr>
+                <td>Heuristic Model</td>
+                <td>None (h(n) = 0 everywhere)</td>
+                <td>Admissible Euclidean Straight-Line Distance</td>
+              </tr>
+              <tr>
+                <td>Nodes Explored (Settled)</td>
+                <td id="lab-dijkstra-nodes">--</td>
+                <td id="lab-astar-nodes" class="val-highlight">--</td>
+              </tr>
+              <tr>
+                <td>Measured CPU Time</td>
+                <td id="lab-dijkstra-time">--</td>
+                <td id="lab-astar-time">--</td>
+              </tr>
+              <tr>
+                <td>Computed Path Distance</td>
+                <td id="lab-dijkstra-dist">--</td>
+                <td id="lab-astar-dist">--</td>
+              </tr>
+              <tr>
+                <td>Global Optimality</td>
+                <td>Guaranteed Optimal</td>
+                <td>Guaranteed Optimal (h &le; h*)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="dsa-insight-callout">
+          <strong>DSA Insight for Viva:</strong> A* search prioritizes nodes that minimize estimated distance to the destination, cutting down unneeded vertex exploration in branches facing away from the goal while guaranteeing mathematical optimality.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DSA Real-Time Graph Inspector -->
+  <div id="modal-inspector" class="modal-layer hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">🔍</span>
+          <h3>DSA Graph Inspector & Mathematical Breakdown</h3>
+        </div>
+        <button class="btn-modal-close" data-modal="modal-inspector">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="inspector-grid">
+          <div class="inspector-box">
+            <h4>A* Evaluation Function</h4>
+            <div class="formula-block">
+              <code>f(n) = g(n) + h(n)</code>
+            </div>
+            <p><strong>g(n):</strong> Exact accumulated walking cost from starting node.</p>
+            <p><strong>h(n):</strong> Euclidean straight-line distance to goal in 2D space: &radic;((x<sub>dest</sub>-x<sub>n</sub>)&sup2; + (y<sub>dest</sub>-y<sub>n</sub>)&sup2;).</p>
+            <p><strong>Admissibility:</strong> Because straight-line distance is the absolute shortest possible path between two points in metric space, h(n) &le; h*(n), guaranteeing optimal paths.</p>
+          </div>
+          <div class="inspector-box">
+            <h4>Dijkstra Min-Heap Mechanism</h4>
+            <div class="formula-block">
+              <code>std::priority_queue&lt;pair&lt;double, int&gt;, ..., std::greater&gt;</code>
+            </div>
+            <p><strong>Relaxation:</strong> If dist[u] + weight(u, v) &lt; dist[v], dist[v] is updated and v is inserted into the min-heap.</p>
+            <p><strong>Time Complexity:</strong> O((V + E) log V).</p>
+            <p><strong>Space Complexity:</strong> O(V) for predecessor and distance tables.</p>
+          </div>
+        </div>
+        <div id="inspector-dynamic-content" style="margin-top: 18px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Project Viva & Examination Guide -->
+  <div id="modal-viva" class="modal-layer hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">🎓</span>
+          <h3>About SmartRoute CGC — Viva & Presentation Guide</h3>
+        </div>
+        <button class="btn-modal-close" data-modal="modal-viva">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="viva-article">
+          <h4>1. Why Graph Theory for Campus Navigation?</h4>
+          <p>Campus layouts are cyclic networks with intersections (vertices) and walkways (edges). Trees cannot represent alternate corridors or cycles. An Adjacency List is chosen because campus road graphs are sparse (average degree ~3.8 per landmark), using O(V + E) memory rather than O(V<sup>2</sup>) for an Adjacency Matrix.</p>
+
+          <h4>2. Why Can BFS Not Replace Dijkstra on Campus Paths?</h4>
+          <p>Standard BFS operates on unweighted graphs (counts hops). On campus, a path with 2 long walkways might take 10 minutes, whereas an alternative 3-segment walkway takes only 4 minutes. BFS minimizes edge hops, whereas Dijkstra minimizes total travel time.</p>
+
+          <h4>3. How Does Simulated Traffic Affect Graph Edge Weights?</h4>
+          <p>Each edge maintains a base walking time and congestion multiplier (LOW=1.0x, MED=1.5x, HIGH=2.5x). During Dijkstra/A* relaxation, the edge weight increases dynamically, shifting the optimal frontier around crowded student hubs.</p>
+
+          <h4>4. How Are Road Closures Handled?</h4>
+          <p>Setting <code>edge.blocked = true</code> causes the search algorithms to skip the edge in O(1) time without reallocating graph structures, demonstrating dynamic graph modification.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div id="toast-shelf" class="toast-shelf"></div>
+
+  <!-- Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>

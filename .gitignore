@@ -1,0 +1,8 @@
+build/
+*.o
+smartroute
+smartroute_web
+test_runner
+.DS_Store
+.vscode/
+.idea/
